@@ -1610,6 +1610,16 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     {
         /* need pbc for adress weight calculation with pbc_dx */
         set_pbc(&pbc, inputrec->ePBC, box);
+
+        /****************************************************/
+        /* additions to compute local pressure in slab in z */
+        mdatoms->lp_box_z = box[ZZ][ZZ];
+        printf("Step %d\n", step);
+        /* todo: must add "if condition" if user option for local p is implemented */
+        for(i = 0; i < mdatoms->n_lp_bins; i++)
+          mdatoms->p_slab[i] = 0.0;
+        /***************************************************/
+
         if (fr->adress_site == eAdressSITEcog)
         {
             update_adress_weights_cog(top->idef.iparams, top->idef.il, x, fr, mdatoms,
@@ -2003,6 +2013,15 @@ void do_force(FILE *fplog, t_commrec *cr,
         default:
             gmx_incons("Invalid cut-off scheme passed!");
     }
+
+    /****************************************************/
+    /* additions to compute local pressure in slab in z */
+    /* todo: must add "If condition" if user is given to do local pressure or not */
+    printf("PS ");
+    for(i = 0; i < mdatoms->n_lp_bins; i++)
+      printf("%g ", mdatoms->p_slab[i]*16.6054/(2.0*box[XX][XX]*box[YY][YY]));
+    printf("\n");
+    /****************************************************/
 }
 
 

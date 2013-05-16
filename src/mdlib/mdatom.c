@@ -209,6 +209,19 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
             srenew(md->wf, md->nalloc);
             srenew(md->tf_table_index, md->nalloc);
         }
+
+        /****************************************************/
+        /* additions to compute local pressure in slab in z */
+        /* todo: add userspecified option to switch local pressue determination on/off */
+        md->n_lp_bins = ir->userint1;
+
+        if (md->n_lp_bins <= 0)
+          gmx_fatal(FARGS, "Set userint1 for the bin count.\n");
+
+        srenew(md->z_pos,md->nalloc);
+        srenew(md->p_slab,md->n_lp_bins);
+        /***************************************************/
+
     }
 
     alook = gmx_mtop_atomlookup_init(mtop);

@@ -100,6 +100,12 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
 
+    /****************************************************/
+    /* additions to compute local pressure in slab in z */
+    int bini, binj, binstart, bin;
+    real boxz = mdatoms->lp_box_z;
+    /****************************************************/
+
     x                   = xx[0];
     f                   = ff[0];
     ielec               = nlist->ielec;
@@ -425,6 +431,25 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             f[j3+0]          = f[j3+0] - tx;
             f[j3+1]          = f[j3+1] - ty;
             f[j3+2]          = f[j3+2] - tz;
+
+            /****************************************************/
+            /* additions to compute local pressure in slab in z */
+            bini = (int) ((mdatoms->z_pos[ii]+shZ)*(double)mdatoms->n_lp_bins/boxz);
+            binj = (int) (mdatoms->z_pos[jnr]*(double)mdatoms->n_lp_bins/boxz);
+
+            if(bini != binj){
+              if(bini < binj){
+                for(bin = bini; bin < binj; bin++){
+                  mdatoms->p_slab[bin] -= 2.0*tz; //factor 2: because we have a i < j loop
+                }
+              }else{
+                for(bin = binj; bin < bini; bin++){
+                  mdatoms->p_slab[bin] += 2.0*tz; //factor 2: because we have a i < j loop
+                }
+              }
+            }
+            /****************************************************/
+
         }
 
         f[ii3+0]         = f[ii3+0] + fix;
