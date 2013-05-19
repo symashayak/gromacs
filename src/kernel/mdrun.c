@@ -61,6 +61,12 @@
 int cmain(int argc, char *argv[])
 {
     const char   *desc[] = {
+      "This is a modified version of [TT]mdrun[tt] to compute local pressure variation",
+      "in z direction in a slab geometry. The modifications are based on the method of planes",
+      "approach described in Ref.: Todd et al., Phys. Rev. E., 52, 1627, 1995. \n",
+      "Note: it does not use PME for electrostatics, so use cut-off or reaction-field for",
+      "coulombic interactions.\n",
+      "These modifications are done by S. Y. Mashayak. For questions write to mashayak@votca.org.\n",
         "The [TT]mdrun[tt] program is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
         "but it can also perform Stochastic Dynamics, Energy Minimization,",
