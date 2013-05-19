@@ -1611,15 +1611,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* need pbc for adress weight calculation with pbc_dx */
         set_pbc(&pbc, inputrec->ePBC, box);
 
-        /****************************************************/
-        /* additions to compute local pressure in slab in z */
-        mdatoms->lp_box_z = box[ZZ][ZZ];
-        printf("Step %d\n", step);
-        /* todo: must add "if condition" if user option for local p is implemented */
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          mdatoms->p_slab[i] = 0.0;
-        /***************************************************/
-
         if (fr->adress_site == eAdressSITEcog)
         {
             update_adress_weights_cog(top->idef.iparams, top->idef.il, x, fr, mdatoms,
@@ -1971,6 +1962,17 @@ void do_force(FILE *fplog, t_commrec *cr,
               gmx_bool bBornRadii,
               int flags)
 {
+  /****************************************************/
+  /* additions to compute local pressure in slab in z */
+  int i;
+
+  mdatoms->lp_box_z = box[ZZ][ZZ];
+  printf("Step %d\n", step);
+  /* todo: must add "if condition" if user option for local p is implemented */
+  for(i = 0; i < mdatoms->n_lp_bins; i++)
+    mdatoms->p_slab[i] = 0.0;
+  /***************************************************/
+
     /* modify force flag if not doing nonbonded */
     if (!fr->bNonbonded)
     {
