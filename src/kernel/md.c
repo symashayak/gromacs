@@ -1177,6 +1177,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
+
+          /****************************************************/
+          /* additions to compute local pressure in slab in z */
+          for( i = 0; i < state->natoms; i++)
+            mdatoms->z_pos[i] = state->x[i][ZZ];
+          /****************************************************/
+
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
