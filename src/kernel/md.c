@@ -237,6 +237,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     double               cycles_pmes;
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
 
+    /****************************************************/
+    /* S. Y. Mashayak's additions to compute local pressure in slab in z */
+    int lp_bin;
+    /****************************************************/
+
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
@@ -1179,10 +1184,22 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
 
           /****************************************************/
-          /* additions to compute local pressure in slab in z */
+          /* S. Y. Mashayak's additions to compute local pressure in slab in z */
           for( i = 0; i < state->natoms; i++)
             mdatoms->z_pos[i] = state->x[i][ZZ];
-          /****************************************************/
+
+          mdatoms->lp_box_z = state->box[ZZ][ZZ];
+          mdatoms->dz_lp_bin = (double)(mdatoms->lp_box_z/mdatoms->n_lp_bins);
+
+          printf("Step %d\n", step);
+          /* todo: must add "if condition" if user option for local p is implemented */
+          for(i = 0; i < mdatoms->n_lp_bins; i++){
+            mdatoms->p_z_slab[i] = 0.0;
+            mdatoms->p_t_slab[i] = 0.0;
+            mdatoms->p_xz_slab[i] = 0.0;
+            mdatoms->p_yz_slab[i] = 0.0;
+          }
+          /***************************************************/
 
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
                      state->box, state->x, &state->hist,
@@ -1439,6 +1456,47 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * the update.
          * for RerunMD t is read from input trajectory
          */
+
+        /*********************************************************************/
+        /* S. Y. Mashayak's additions to compute local pressure in slab in z */
+
+        for( i = 0; i < state->natoms; i++){
+            lp_bin = (int) ((state->x[i][ZZ])/mdatoms->dz_lp_bin);
+            if( lp_bin >= mdatoms->n_lp_bins || lp_bin < 0 )
+              gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
+
+            mdatoms->p_z_slab[lp_bin] += mdatoms->massT[i]*state->v[i][ZZ]*state->v[i][ZZ];
+            mdatoms->p_t_slab[lp_bin] += 0.5*mdatoms->massT[i]*(state->v[i][XX]*state->v[i][XX]+
+                                              state->v[i][YY]*state->v[i][YY]);
+            mdatoms->p_xz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][XX]*state->v[i][ZZ];
+            mdatoms->p_yz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][YY]*state->v[i][ZZ];
+        }
+
+        /* todo: must add "If condition" if user is given to do local pressure or not */
+
+        /* converting kJ/(mol*nm) to bar by multiplying 16.6054/A */
+        // PZZ
+        printf("PZZ ");
+        for(i = 0; i < mdatoms->n_lp_bins; i++)
+          printf("%g ", mdatoms->p_z_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+        printf("\n");
+        // Pt
+        printf("PT ");
+        for(i = 0; i < mdatoms->n_lp_bins; i++)
+          printf("%g ", mdatoms->p_t_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+        printf("\n");
+        // Pxz
+        printf("PXZ ");
+        for(i = 0; i < mdatoms->n_lp_bins; i++)
+          printf("%g ", mdatoms->p_xz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+        printf("\n");
+        // Pyz
+        printf("PYZ ");
+        for(i = 0; i < mdatoms->n_lp_bins; i++)
+          printf("%g ", mdatoms->p_yz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+        printf("\n");
+        /****************************************************/
+
         GMX_MPE_LOG(ev_output_start);
 
         mdof_flags = 0;

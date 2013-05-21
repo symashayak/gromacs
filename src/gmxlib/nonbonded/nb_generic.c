@@ -104,6 +104,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     /* additions to compute local pressure in slab in z */
     int bini, binj, binstart, bin;
     real boxz = mdatoms->lp_box_z;
+    //printf("\n In generic non-bonded force computations \n");
     /****************************************************/
 
     x                   = xx[0];
@@ -434,17 +435,29 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
             /****************************************************/
             /* additions to compute local pressure in slab in z */
-            bini = (int) ((mdatoms->z_pos[ii]+shZ)*(double)mdatoms->n_lp_bins/boxz);
-            binj = (int) (mdatoms->z_pos[jnr]*(double)mdatoms->n_lp_bins/boxz);
+            bini = (int) ((mdatoms->z_pos[ii]+shZ)/mdatoms->dz_lp_bin);
+            binj = (int) (mdatoms->z_pos[jnr]/mdatoms->dz_lp_bin);
+            if( bini >= mdatoms->n_lp_bins || bini < 0 ||
+                binj >= mdatoms->n_lp_bins || binj <0 )
+              gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
 
+            // remember we have a i < j loop and virial is divided by 2*A but k.e. part is divided by only A
+            // therefore divide by 2.0 (or multiply by 0.5) here only
             if(bini != binj){
               if(bini < binj){
-                for(bin = bini; bin < binj; bin++){
-                  mdatoms->p_slab[bin] -= 2.0*tz; //factor 2: because we have a i < j loop
+                for(bin = bini+1; bin < binj; bin++){
+                  mdatoms->p_z_slab[bin] -= 0.5*tz; //we have a i < j loop
+                  mdatoms->p_t_slab[bin] -= 0.5*(tx*fabs(dx/dz)+ty*fabs(dy/dz))*0.5;
+                  //last mult. by 0.5 to avg. xx and yy
+                  mdatoms->p_xz_slab[bin] -= 0.5*tx;
+                  mdatoms->p_yz_slab[bin] -= 0.5*ty;
                 }
               }else{
-                for(bin = binj; bin < bini; bin++){
-                  mdatoms->p_slab[bin] += 2.0*tz; //factor 2: because we have a i < j loop
+                for(bin = binj+1; bin < bini; bin++){
+                  mdatoms->p_z_slab[bin] += 0.5*tz; //we have a i < j loop
+                  mdatoms->p_t_slab[bin] += 0.5*(tx*fabs(dx/dz)+ty*fabs(dy/dz))*0.5; //mult. by 0.5 to avg. xx and yy
+                  mdatoms->p_xz_slab[bin] += 0.5*tx;
+                  mdatoms->p_yz_slab[bin] += 0.5*ty;
                 }
               }
             }
