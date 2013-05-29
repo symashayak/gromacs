@@ -441,26 +441,42 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 binj >= mdatoms->n_lp_bins || binj <0 )
               gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
 
-            // remember we have a i < j loop and virial is divided by 2*A but k.e. part is divided by only A
+            // using Eq. 4 and 5 from Todd et al., PRE, 1995 article for Pzz, Pxx, and Pyy
+
+            // remember we have a i < j loop therefore no double sum
+            // also virial is divided by 2*A but k.e. part is divided by only A
             // therefore divide by 2.0 (or multiply by 0.5) here only
+
             if(bini != binj){
+
               if(bini < binj){
+
                 for(bin = bini+1; bin < binj; bin++){
-                  mdatoms->p_z_slab[bin] -= 0.5*tz; //we have a i < j loop
-                  mdatoms->p_t_slab[bin] -= 0.5*(tx*fabs(dx/dz)+ty*fabs(dy/dz))*0.5;
-                  //last mult. by 0.5 to avg. xx and yy
+
+                  mdatoms->p_zz_slab[bin] -= 0.5*tz;
+                  mdatoms->p_xx_slab[bin] -= 0.5*tx*fabs(dx/dz);
+                  mdatoms->p_yy_slab[bin] -= 0.5*ty*fabs(dy/dz);
                   mdatoms->p_xz_slab[bin] -= 0.5*tx;
                   mdatoms->p_yz_slab[bin] -= 0.5*ty;
+
                 }
+
               }else{
+
                 for(bin = binj+1; bin < bini; bin++){
-                  mdatoms->p_z_slab[bin] += 0.5*tz; //we have a i < j loop
-                  mdatoms->p_t_slab[bin] += 0.5*(tx*fabs(dx/dz)+ty*fabs(dy/dz))*0.5; //mult. by 0.5 to avg. xx and yy
+
+                  mdatoms->p_zz_slab[bin] += 0.5*tz;
+                  mdatoms->p_xx_slab[bin] += 0.5*tx*fabs(dx/dz);
+                  mdatoms->p_yy_slab[bin] += 0.5*ty*fabs(dy/dz);
                   mdatoms->p_xz_slab[bin] += 0.5*tx;
                   mdatoms->p_yz_slab[bin] += 0.5*ty;
-                }
+
+                  }
+
               }
+
             }
+
             /****************************************************/
 
         }

@@ -78,8 +78,9 @@ typedef struct {
     unsigned short        *tf_table_index; /* The tf table that will be applied, if thermodyn, force enabled*/
   /* additions to compute local pressue in slab in z direction */
   real *z_pos;
-  real *p_z_slab; // normal component
-  real *p_t_slab; // lateral component
+  real *p_zz_slab;
+  real *p_xx_slab;
+  real *p_yy_slab;
   real *p_xz_slab;
   real *p_yz_slab;
   real lp_box_z;

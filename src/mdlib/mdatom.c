@@ -219,8 +219,9 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
           gmx_fatal(FARGS, "Set userint1 for the bin count.\n");
 
         srenew(md->z_pos,md->nalloc);
-        srenew(md->p_z_slab,md->n_lp_bins);
-        srenew(md->p_t_slab,md->n_lp_bins);
+        srenew(md->p_zz_slab,md->n_lp_bins);
+        srenew(md->p_xx_slab,md->n_lp_bins);
+        srenew(md->p_yy_slab,md->n_lp_bins);
         srenew(md->p_xz_slab,md->n_lp_bins);
         srenew(md->p_yz_slab,md->n_lp_bins);
         /***************************************************/

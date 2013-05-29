@@ -1194,8 +1194,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           printf("Step %d\n", step);
           /* todo: must add "if condition" if user option for local p is implemented */
           for(i = 0; i < mdatoms->n_lp_bins; i++){
-            mdatoms->p_z_slab[i] = 0.0;
-            mdatoms->p_t_slab[i] = 0.0;
+            mdatoms->p_zz_slab[i] = 0.0;
+            mdatoms->p_xx_slab[i] = 0.0;
+            mdatoms->p_yy_slab[i] = 0.0;
             mdatoms->p_xz_slab[i] = 0.0;
             mdatoms->p_yz_slab[i] = 0.0;
           }
@@ -1465,12 +1466,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if( lp_bin >= mdatoms->n_lp_bins || lp_bin < 0 )
               gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
 
-            mdatoms->p_z_slab[lp_bin] += mdatoms->massT[i]*state->v[i][ZZ]*state->v[i][ZZ];
-            mdatoms->p_t_slab[lp_bin] += 0.5*mdatoms->massT[i]*(state->v[i][XX]*state->v[i][XX]+
-                                              state->v[i][YY]*state->v[i][YY]);
-            mdatoms->p_xz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][XX]*state->v[i][ZZ];
-            mdatoms->p_yz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][YY]*state->v[i][ZZ];
-        }
+            mdatoms->p_zz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][ZZ]*state->v[i][ZZ]/mdatoms->dz_lp_bin;
+            mdatoms->p_xx_slab[lp_bin] += mdatoms->massT[i]*state->v[i][XX]*state->v[i][XX]/mdatoms->dz_lp_bin;
+            mdatoms->p_yy_slab[lp_bin] += mdatoms->massT[i]*state->v[i][YY]*state->v[i][YY]/mdatoms->dz_lp_bin;
+            mdatoms->p_xz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][XX]*state->v[i][ZZ]/mdatoms->dz_lp_bin;
+            mdatoms->p_yz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][YY]*state->v[i][ZZ]/mdatoms->dz_lp_bin;
+            }
 
         /* todo: must add "If condition" if user is given to do local pressure or not */
 
@@ -1478,12 +1479,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         // PZZ
         printf("PZZ ");
         for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->p_z_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+          printf("%g ", mdatoms->p_zz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
-        // Pt
-        printf("PT ");
+        // Pxx
+        printf("PXX ");
         for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->p_t_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+          printf("%g ", mdatoms->p_xx_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
+        printf("\n");
+        // Pyy
+        printf("PYY ");
+        for(i = 0; i < mdatoms->n_lp_bins; i++)
+          printf("%g ", mdatoms->p_yy_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
         // Pxz
         printf("PXZ ");
