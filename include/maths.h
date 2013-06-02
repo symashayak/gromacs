@@ -60,6 +60,10 @@ extern "C" {
 #define M_2PI       6.28318530717958647692
 #endif
 
+#ifndef M_SQRTPI
+#define M_SQRTPI    1.7724538509055
+#endif
+
 #ifndef M_SQRT2
 #define M_SQRT2 sqrt(2.0)
 #endif

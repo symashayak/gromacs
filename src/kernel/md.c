@@ -239,7 +239,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /****************************************************/
     /* S. Y. Mashayak's additions to compute local pressure in slab in z */
-    int lp_bin;
+    int lp_bin, bin, bini, binj;
+    real dz_p, phi_z;
+    real vzz, vxx, vyy, vxy, vxz, vyz;
     /****************************************************/
 
 #ifdef GMX_FAHCORE
@@ -1188,9 +1190,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           for( i = 0; i < state->natoms; i++)
             mdatoms->z_pos[i] = state->x[i][ZZ];
 
-          mdatoms->lp_box_z = state->box[ZZ][ZZ];
-          mdatoms->dz_lp_bin = (double)(mdatoms->lp_box_z/mdatoms->n_lp_bins);
-
           printf("Step %d\n", step);
           /* todo: must add "if condition" if user option for local p is implemented */
           for(i = 0; i < mdatoms->n_lp_bins; i++){
@@ -1462,16 +1461,36 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* S. Y. Mashayak's additions to compute local pressure in slab in z */
 
         for( i = 0; i < state->natoms; i++){
+          /*
             lp_bin = (int) ((state->x[i][ZZ])/mdatoms->dz_lp_bin);
             if( lp_bin >= mdatoms->n_lp_bins || lp_bin < 0 )
               gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
+          */
+          vzz = mdatoms->massT[i]*state->v[i][ZZ]*state->v[i][ZZ];
+          vxx = mdatoms->massT[i]*state->v[i][XX]*state->v[i][XX];
+          vyy = mdatoms->massT[i]*state->v[i][YY]*state->v[i][YY];
+          vxz = mdatoms->massT[i]*state->v[i][XX]*state->v[i][ZZ];
+          vyz = mdatoms->massT[i]*state->v[i][YY]*state->v[i][ZZ];
 
-            mdatoms->p_zz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][ZZ]*state->v[i][ZZ]/mdatoms->dz_lp_bin;
-            mdatoms->p_xx_slab[lp_bin] += mdatoms->massT[i]*state->v[i][XX]*state->v[i][XX]/mdatoms->dz_lp_bin;
-            mdatoms->p_yy_slab[lp_bin] += mdatoms->massT[i]*state->v[i][YY]*state->v[i][YY]/mdatoms->dz_lp_bin;
-            mdatoms->p_xz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][XX]*state->v[i][ZZ]/mdatoms->dz_lp_bin;
-            mdatoms->p_yz_slab[lp_bin] += mdatoms->massT[i]*state->v[i][YY]*state->v[i][ZZ]/mdatoms->dz_lp_bin;
+          bini = (int) ((state->x[i][ZZ] - 3.0*mdatoms->w_gauss))/mdatoms->dz_lp_bin;
+          if ( bini < 0 ) bini = 0;
+
+          binj = (int) ((state->x[i][ZZ] + 3.0*mdatoms->w_gauss))/mdatoms->dz_lp_bin;
+          if ( binj >= mdatoms->n_lp_bins ) binj = mdatoms->n_lp_bins-1;
+
+          for( bin = 0; bin < mdatoms->n_lp_bins; bin++){
+
+            dz_p = state->x[i][ZZ] - mdatoms->z_bin[bin];
+            phi_z = exp( -1.0*dz_p*dz_p/(2.0*mdatoms->w_gauss*mdatoms->w_gauss) )/
+              (M_SQRT2*M_SQRTPI*mdatoms->w_gauss);
+            mdatoms->p_zz_slab[bin] += vzz*phi_z;
+            mdatoms->p_xx_slab[bin] += vxx*phi_z;
+            mdatoms->p_yy_slab[bin] += vyy*phi_z;
+            mdatoms->p_xz_slab[bin] += vxz*phi_z;
+            mdatoms->p_yz_slab[bin] += vyz*phi_z;
+
             }
+        }
 
         /* todo: must add "If condition" if user is given to do local pressure or not */
 

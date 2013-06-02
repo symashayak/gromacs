@@ -103,7 +103,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     /****************************************************/
     /* additions to compute local pressure in slab in z */
     int bini, binj, binstart, bin;
-    real boxz = mdatoms->lp_box_z;
+    real erfz;
+    //    real boxz = mdatoms->lp_box_z;
     //printf("\n In generic non-bonded force computations \n");
     /****************************************************/
 
@@ -435,6 +436,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
             /****************************************************/
             /* additions to compute local pressure in slab in z */
+
+            /*
             bini = (int) ((mdatoms->z_pos[ii]+shZ)/mdatoms->dz_lp_bin);
             binj = (int) (mdatoms->z_pos[jnr]/mdatoms->dz_lp_bin);
             if( bini >= mdatoms->n_lp_bins || bini < 0 ||
@@ -476,8 +479,30 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
               }
 
             }
+            */
 
+            // we need dz = zj - zi, rij = rj - ri , here its i-j
+
+            for( bin = 0; bin < mdatoms->n_lp_bins; bin++){
+
+              erfz = erf((-1.0*dz - mdatoms->z_bin[bin] + iz)/(M_SQRT2*mdatoms->w_gauss)) -
+                erf((-mdatoms->z_bin[bin] + iz)/(M_SQRT2*mdatoms->w_gauss));
+
+              if( dz != 0.0){
+                mdatoms->p_zz_slab[bin] -= 0.5*erfz*dz*tz/dz;
+
+                mdatoms->p_xx_slab[bin] -= 0.5*erfz*dx*tx/dz;
+
+                mdatoms->p_yy_slab[bin] -= 0.5*erfz*dy*ty/dz;
+
+                mdatoms->p_xz_slab[bin] -= 0.5*erfz*dx*tz/dz;
+
+                mdatoms->p_yz_slab[bin] -= 0.5*erfz*dy*tz/dz;
+              }
+
+            }
             /****************************************************/
+
 
         }
 

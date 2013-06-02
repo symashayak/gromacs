@@ -213,10 +213,18 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
         /****************************************************/
         /* additions to compute local pressure in slab in z */
         /* todo: add userspecified option to switch local pressue determination on/off */
-        md->n_lp_bins = ir->userint1;
+        md->z_lp = ir->userreal1;
+        md->dz_lp_bin = ir->userreal2;
+        md->w_gauss = ir->userreal3;
 
-        if (md->n_lp_bins <= 0)
-          gmx_fatal(FARGS, "Set userint1 for the bin count.\n");
+        if (md->z_lp <= 0.0)
+          gmx_fatal(FARGS, "Set userreal1 for the domain length in z.\n");
+        if (md->dz_lp_bin <= 0.0)
+          gmx_fatal(FARGS, "Set userreal2 for the bin size.\n");
+        if (md->w_gauss <= 0.0)
+          gmx_fatal(FARGS, "Set userreal3 for the smoothing gauss kernel variance.\n");
+
+        md->n_lp_bins = (int) ( md->z_lp / md->dz_lp_bin );
 
         srenew(md->z_pos,md->nalloc);
         srenew(md->p_zz_slab,md->n_lp_bins);
@@ -224,6 +232,11 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
         srenew(md->p_yy_slab,md->n_lp_bins);
         srenew(md->p_xz_slab,md->n_lp_bins);
         srenew(md->p_yz_slab,md->n_lp_bins);
+        srenew(md->z_bin,md->n_lp_bins);
+
+        for( i = 0; i < md->n_lp_bins; i++)
+          md->z_bin[i] = (i + 0.5)*md->dz_lp_bin;
+
         /***************************************************/
 
     }

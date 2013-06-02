@@ -77,15 +77,18 @@ typedef struct {
     real                  *wf;
     unsigned short        *tf_table_index; /* The tf table that will be applied, if thermodyn, force enabled*/
   /* additions to compute local pressue in slab in z direction */
-  real *z_pos;
-  real *p_zz_slab;
-  real *p_xx_slab;
-  real *p_yy_slab;
-  real *p_xz_slab;
-  real *p_yz_slab;
-  real lp_box_z;
-  int n_lp_bins;
-  real dz_lp_bin;
+  real *z_pos; /* z positions of atoms */
+  real *z_bin; /* z positions of bin */
+  real *p_zz_slab; /* local Pzz vector */
+  real *p_xx_slab; /* local Pxx vector */
+  real *p_yy_slab; /* local Pyy vector */
+  real *p_xz_slab; /* local Pxz vector */
+  real *p_yz_slab; /* local Pyz vector */
+  real z_lp; /* domain length in z */
+  int n_lp_bins; /* number of bins */
+  real dz_lp_bin; /* size of a bin */
+  real w_gauss; /* size of gaussian kernel variance */
+
 } t_mdatoms;
 
 #ifdef __cplusplus
