@@ -104,6 +104,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     /* additions to compute local pressure in slab in z */
     int bini, binj, binstart, bin;
     real erfz;
+    real r_up, r_low;
     //    real boxz = mdatoms->lp_box_z;
     //printf("\n In generic non-bonded force computations \n");
     /****************************************************/
@@ -437,67 +438,31 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             /****************************************************/
             /* additions to compute local pressure in slab in z */
 
-            /*
-            bini = (int) ((mdatoms->z_pos[ii]+shZ)/mdatoms->dz_lp_bin);
-            binj = (int) (mdatoms->z_pos[jnr]/mdatoms->dz_lp_bin);
-            if( bini >= mdatoms->n_lp_bins || bini < 0 ||
-                binj >= mdatoms->n_lp_bins || binj <0 )
-              gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
-
-            // using Eq. 4 and 5 from Todd et al., PRE, 1995 article for Pzz, Pxx, and Pyy
-
-            // remember we have a i < j loop therefore no double sum
-            // also virial is divided by 2*A but k.e. part is divided by only A
-            // therefore divide by 2.0 (or multiply by 0.5) here only
-
-            if(bini != binj){
-
-              if(bini < binj){
-
-                for(bin = bini+1; bin < binj; bin++){
-
-                  mdatoms->p_zz_slab[bin] -= 0.5*tz;
-                  mdatoms->p_xx_slab[bin] -= 0.5*tx*fabs(dx/dz);
-                  mdatoms->p_yy_slab[bin] -= 0.5*ty*fabs(dy/dz);
-                  mdatoms->p_xz_slab[bin] -= 0.5*tx;
-                  mdatoms->p_yz_slab[bin] -= 0.5*ty;
-
-                }
-
-              }else{
-
-                for(bin = binj+1; bin < bini; bin++){
-
-                  mdatoms->p_zz_slab[bin] += 0.5*tz;
-                  mdatoms->p_xx_slab[bin] += 0.5*tx*fabs(dx/dz);
-                  mdatoms->p_yy_slab[bin] += 0.5*ty*fabs(dy/dz);
-                  mdatoms->p_xz_slab[bin] += 0.5*tx;
-                  mdatoms->p_yz_slab[bin] += 0.5*ty;
-
-                  }
-
-              }
-
-            }
-            */
-
             // we need dz = zj - zi, rij = rj - ri , here its i-j
 
             for( bin = 0; bin < mdatoms->n_lp_bins; bin++){
 
-              erfz = erf((-1.0*dz - mdatoms->z_bin[bin] + iz)/(M_SQRT2*mdatoms->w_gauss)) -
-                erf((-mdatoms->z_bin[bin] + iz)/(M_SQRT2*mdatoms->w_gauss));
+              r_up = -1.0*dz - mdatoms->z_bin[bin] + iz;
+
+              if( r_up > 3.0*mdatoms->w_gauss )
+                r_up = 3.0*mdatoms->w_gauss;
+
+              r_low = -1.0 * mdatoms->z_bin[bin] + iz;
+
+              if( r_low > 3.0*mdatoms->w_gauss )
+                r_low = 3.0*mdatoms->w_gauss;
+
+              erfz = erf(r_up/(M_SQRT2*mdatoms->w_gauss)) -
+                erf(r_low/(M_SQRT2*mdatoms->w_gauss));
 
               if( dz != 0.0){
+
                 mdatoms->p_zz_slab[bin] -= 0.5*erfz*dz*tz/dz;
-
                 mdatoms->p_xx_slab[bin] -= 0.5*erfz*dx*tx/dz;
-
                 mdatoms->p_yy_slab[bin] -= 0.5*erfz*dy*ty/dz;
-
                 mdatoms->p_xz_slab[bin] -= 0.5*erfz*dx*tz/dz;
-
                 mdatoms->p_yz_slab[bin] -= 0.5*erfz*dy*tz/dz;
+
               }
 
             }

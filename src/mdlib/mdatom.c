@@ -213,6 +213,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
         /****************************************************/
         /* additions to compute local pressure in slab in z */
         /* todo: add userspecified option to switch local pressue determination on/off */
+
         md->z_lp = ir->userreal1;
         md->dz_lp_bin = ir->userreal2;
         md->w_gauss = ir->userreal3;
@@ -226,7 +227,6 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
         md->n_lp_bins = (int) ( md->z_lp / md->dz_lp_bin );
 
-        srenew(md->z_pos,md->nalloc);
         srenew(md->p_zz_slab,md->n_lp_bins);
         srenew(md->p_xx_slab,md->n_lp_bins);
         srenew(md->p_yy_slab,md->n_lp_bins);

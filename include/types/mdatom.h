@@ -76,8 +76,8 @@ typedef struct {
     /* The AdResS weighting function */
     real                  *wf;
     unsigned short        *tf_table_index; /* The tf table that will be applied, if thermodyn, force enabled*/
+
   /* additions to compute local pressue in slab in z direction */
-  real *z_pos; /* z positions of atoms */
   real *z_bin; /* z positions of bin */
   real *p_zz_slab; /* local Pzz vector */
   real *p_xx_slab; /* local Pxx vector */

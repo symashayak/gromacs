@@ -240,7 +240,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /****************************************************/
     /* S. Y. Mashayak's additions to compute local pressure in slab in z */
     int lp_bin, bin, bini, binj;
-    real dz_p, phi_z;
+    real dz_p, phi_z, r_phi;
     real vzz, vxx, vyy, vxy, vxz, vyz;
     /****************************************************/
 
@@ -1187,9 +1187,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
           /****************************************************/
           /* S. Y. Mashayak's additions to compute local pressure in slab in z */
-          for( i = 0; i < state->natoms; i++)
-            mdatoms->z_pos[i] = state->x[i][ZZ];
-
           printf("Step %d\n", step);
           /* todo: must add "if condition" if user option for local p is implemented */
           for(i = 0; i < mdatoms->n_lp_bins; i++){
@@ -1201,12 +1198,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           }
           /***************************************************/
 
-            do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
-                     state->lambda, graph,
-                     fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags);
+          do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
+                   state->box, state->x, &state->hist,
+                   f, force_vir, mdatoms, enerd, fcd,
+                   state->lambda, graph,
+                   fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
+                   (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
         GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1481,8 +1478,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           for( bin = 0; bin < mdatoms->n_lp_bins; bin++){
 
             dz_p = state->x[i][ZZ] - mdatoms->z_bin[bin];
-            phi_z = exp( -1.0*dz_p*dz_p/(2.0*mdatoms->w_gauss*mdatoms->w_gauss) )/
-              (M_SQRT2*M_SQRTPI*mdatoms->w_gauss);
+
+            r_phi = fabs(dz_p);
+
+            // set kernel cut-off to 3*w
+            if( r_phi > 3.0*mdatoms->w_gauss )
+              phi_z = 0.0;
+            else
+              phi_z = exp( -1.0*r_phi*r_phi/(2.0*mdatoms->w_gauss*mdatoms->w_gauss) )/
+                (M_SQRT2*M_SQRTPI*mdatoms->w_gauss);
+
             mdatoms->p_zz_slab[bin] += vzz*phi_z;
             mdatoms->p_xx_slab[bin] += vxx*phi_z;
             mdatoms->p_yy_slab[bin] += vyy*phi_z;
