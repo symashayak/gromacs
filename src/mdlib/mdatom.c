@@ -227,11 +227,21 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
         md->n_lp_bins = (int) ( md->z_lp / md->dz_lp_bin );
 
-        srenew(md->p_zz_slab,md->n_lp_bins);
-        srenew(md->p_xx_slab,md->n_lp_bins);
-        srenew(md->p_yy_slab,md->n_lp_bins);
-        srenew(md->p_xz_slab,md->n_lp_bins);
-        srenew(md->p_yz_slab,md->n_lp_bins);
+        srenew(md->pkin_zz_slab,md->n_lp_bins);
+        srenew(md->pkin_xx_slab,md->n_lp_bins);
+        srenew(md->pkin_yy_slab,md->n_lp_bins);
+        srenew(md->pkin_xz_slab,md->n_lp_bins);
+        srenew(md->pkin_yz_slab,md->n_lp_bins);
+
+        srenew(md->pvir_zz_slab,md->n_lp_bins);
+        srenew(md->pvir_xx_slab,md->n_lp_bins);
+        srenew(md->pvir_yy_slab,md->n_lp_bins);
+        srenew(md->pvir_xz_slab,md->n_lp_bins);
+        srenew(md->pvir_yz_slab,md->n_lp_bins);
+
+        srenew(md->pkin_slab,md->n_lp_bins);
+        srenew(md->pvir_slab,md->n_lp_bins);
+
         srenew(md->z_bin,md->n_lp_bins);
 
         for( i = 0; i < md->n_lp_bins; i++)

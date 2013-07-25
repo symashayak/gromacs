@@ -457,11 +457,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
               if( dz != 0.0){
 
-                mdatoms->p_zz_slab[bin] -= 0.5*erfz*dz*tz/dz;
-                mdatoms->p_xx_slab[bin] -= 0.5*erfz*dx*tx/dz;
-                mdatoms->p_yy_slab[bin] -= 0.5*erfz*dy*ty/dz;
-                mdatoms->p_xz_slab[bin] -= 0.5*erfz*dx*tz/dz;
-                mdatoms->p_yz_slab[bin] -= 0.5*erfz*dy*tz/dz;
+                mdatoms->pvir_zz_slab[bin] -= 0.5*erfz*dz*tz/dz;
+                mdatoms->pvir_xx_slab[bin] -= 0.5*erfz*dx*tx/dz;
+                mdatoms->pvir_yy_slab[bin] -= 0.5*erfz*dy*ty/dz;
+                mdatoms->pvir_xz_slab[bin] -= 0.5*erfz*dx*tz/dz;
+                mdatoms->pvir_yz_slab[bin] -= 0.5*erfz*dy*tz/dz;
+
+                mdatoms->pvir_slab[bin] -= 0.5*erfz*(dz*tz+dx*tx+dy*ty)/(dz*3.0);
 
               }
 

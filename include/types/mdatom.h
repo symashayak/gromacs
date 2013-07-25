@@ -79,11 +79,22 @@ typedef struct {
 
   /* additions to compute local pressue in slab in z direction */
   real *z_bin; /* z positions of bin */
-  real *p_zz_slab; /* local Pzz vector */
-  real *p_xx_slab; /* local Pxx vector */
-  real *p_yy_slab; /* local Pyy vector */
-  real *p_xz_slab; /* local Pxz vector */
-  real *p_yz_slab; /* local Pyz vector */
+
+  real *pkin_slab;    /* avg kinetic local pressure vector */
+  real *pvir_slab;    /* avg virial local pressure vector */
+
+  real *pkin_zz_slab; /* kinetic local Pzz vector */
+  real *pkin_xx_slab; /* kinetic local Pxx vector */
+  real *pkin_yy_slab; /* kinetic local Pyy vector */
+  real *pkin_xz_slab; /* kinetic local Pxz vector */
+  real *pkin_yz_slab; /* kinetic local Pyz vector */
+
+  real *pvir_zz_slab; /* virial local Pzz vector */
+  real *pvir_xx_slab; /* virial local Pxx vector */
+  real *pvir_yy_slab; /* virial local Pyy vector */
+  real *pvir_xz_slab; /* virial local Pxz vector */
+  real *pvir_yz_slab; /* virial local Pyz vector */
+
   real z_lp; /* domain length in z */
   int n_lp_bins; /* number of bins */
   real dz_lp_bin; /* size of a bin */
