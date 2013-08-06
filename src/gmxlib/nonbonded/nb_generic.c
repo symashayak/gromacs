@@ -105,6 +105,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     int bini, binj, binstart, bin;
     real erfz;
     real r_up, r_low;
+    real ix_com, iy_com, iz_com;
+    real jx_com, jy_com, jz_com;
+    real dx_com, dy_com, dz_com;
+
     //    real boxz = mdatoms->lp_box_z;
     //printf("\n In generic non-bonded force computations \n");
     /****************************************************/
@@ -440,14 +444,25 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
             // we need dz = zj - zi, rij = rj - ri , here its i-j
 
+            ix_com = mdatoms->r_com_atom[ii][XX]+shX;
+            iy_com = mdatoms->r_com_atom[ii][YY]+shY;
+            iz_com = mdatoms->r_com_atom[ii][ZZ]+shZ;
+            jx_com = mdatoms->r_com_atom[jnr][XX];
+            jy_com = mdatoms->r_com_atom[jnr][YY];
+            jz_com = mdatoms->r_com_atom[jnr][ZZ];
+
+            dx_com = ix_com - jx_com;
+            dy_com = iy_com - jy_com;
+            dz_com = iz_com - jz_com;
+
             for( bin = 0; bin < mdatoms->n_lp_bins; bin++){
 
-              r_up = -1.0*dz - mdatoms->z_bin[bin] + iz;
+              r_up = -1.0*dz_com - mdatoms->z_bin[bin] + iz_com;
 
               if( r_up > 3.0*mdatoms->w_gauss )
                 r_up = 3.0*mdatoms->w_gauss;
 
-              r_low = -1.0 * mdatoms->z_bin[bin] + iz;
+              r_low = -1.0 * mdatoms->z_bin[bin] + iz_com;
 
               if( r_low > 3.0*mdatoms->w_gauss )
                 r_low = 3.0*mdatoms->w_gauss;
@@ -455,15 +470,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
               erfz = erf(r_up/(M_SQRT2*mdatoms->w_gauss)) -
                 erf(r_low/(M_SQRT2*mdatoms->w_gauss));
 
-              if( dz != 0.0){
+              if( dz_com != 0.0){
 
-                mdatoms->pvir_zz_slab[bin] -= 0.5*erfz*dz*tz/dz;
-                mdatoms->pvir_xx_slab[bin] -= 0.5*erfz*dx*tx/dz;
-                mdatoms->pvir_yy_slab[bin] -= 0.5*erfz*dy*ty/dz;
-                mdatoms->pvir_xz_slab[bin] -= 0.5*erfz*dx*tz/dz;
-                mdatoms->pvir_yz_slab[bin] -= 0.5*erfz*dy*tz/dz;
-
-                mdatoms->pvir_slab[bin] -= 0.5*erfz*(dz*tz+dx*tx+dy*ty)/(dz*3.0);
+                mdatoms->pvir_zz_slab[bin] -= 0.5*erfz*dz_com*tz/dz_com;
+                mdatoms->pvir_xx_slab[bin] -= 0.5*erfz*dx_com*tx/dz_com;
+                mdatoms->pvir_yy_slab[bin] -= 0.5*erfz*dy_com*ty/dz_com;
+                mdatoms->pvir_xz_slab[bin] -= 0.5*erfz*dx_com*tz/dz_com;
+                mdatoms->pvir_yz_slab[bin] -= 0.5*erfz*dy_com*tz/dz_com;
 
               }
 

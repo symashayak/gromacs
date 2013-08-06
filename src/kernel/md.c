@@ -239,9 +239,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /****************************************************/
     /* S. Y. Mashayak's additions to compute local pressure in slab in z */
-    int lp_bin, bin, bini, binj;
-    real dz_p, phi_z, r_phi;
-    real vzz, vxx, vyy, vxy, vxz, vyz;
+    int d, j;
+    rvec ix;
+    real mtot, inv_mtot;
     /****************************************************/
 
 #ifdef GMX_FAHCORE
@@ -1191,22 +1191,39 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           /* todo: must add "if condition" if user option for local p is implemented */
           for(i = 0; i < mdatoms->n_lp_bins; i++){
 
-            mdatoms->pkin_zz_slab[i] = 0.0;
-            mdatoms->pkin_xx_slab[i] = 0.0;
-            mdatoms->pkin_yy_slab[i] = 0.0;
-            mdatoms->pkin_xz_slab[i] = 0.0;
-            mdatoms->pkin_yz_slab[i] = 0.0;
-
             mdatoms->pvir_zz_slab[i] = 0.0;
             mdatoms->pvir_xx_slab[i] = 0.0;
             mdatoms->pvir_yy_slab[i] = 0.0;
             mdatoms->pvir_xz_slab[i] = 0.0;
             mdatoms->pvir_yz_slab[i] = 0.0;
 
-            mdatoms->pkin_slab[i] = 0.0;
-            mdatoms->pvir_slab[i] = 0.0;
-
           }
+
+          for(i=0; i < top_global->mols.nr; i++){
+
+            mtot = 0.0;
+            for( j = top_global->mols.index[i]; j < top_global->mols.index[i+1]; j++)
+              mtot += mdatoms->massT[j];
+
+            if (mtot > 0.0){
+
+                inv_mtot = 1.0/mtot;
+                clear_rvec(ix);
+
+                for(j = top_global->mols.index[i]; j < top_global->mols.index[i+1]; j++){
+
+                  for(d=0; (d<DIM); d++)
+                    ix[d] += state->x[j][d] * mdatoms->massT[j];
+
+                }
+                for(d=0; (d<DIM); d++)
+                  ix[d] *= inv_mtot;
+            }
+
+            for( j = top_global->mols.index[i]; j < top_global->mols.index[i+1]; j++)
+              copy_rvec(ix,mdatoms->r_com_atom[j]);
+          }
+
           /***************************************************/
 
           do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
@@ -1468,94 +1485,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /*********************************************************************/
         /* S. Y. Mashayak's additions to compute local pressure in slab in z */
 
-        for( i = 0; i < state->natoms; i++){
-          /*
-            lp_bin = (int) ((state->x[i][ZZ])/mdatoms->dz_lp_bin);
-            if( lp_bin >= mdatoms->n_lp_bins || lp_bin < 0 )
-              gmx_fatal(FARGS, "Error in local pressure computation: found a bin outside of a box!");
-          */
-          vzz = mdatoms->massT[i]*state->v[i][ZZ]*state->v[i][ZZ];
-          vxx = mdatoms->massT[i]*state->v[i][XX]*state->v[i][XX];
-          vyy = mdatoms->massT[i]*state->v[i][YY]*state->v[i][YY];
-          vxz = mdatoms->massT[i]*state->v[i][XX]*state->v[i][ZZ];
-          vyz = mdatoms->massT[i]*state->v[i][YY]*state->v[i][ZZ];
-
-          bini = (int) ((state->x[i][ZZ] - 3.0*mdatoms->w_gauss))/mdatoms->dz_lp_bin;
-          if ( bini < 0 ) bini = 0;
-
-          binj = (int) ((state->x[i][ZZ] + 3.0*mdatoms->w_gauss))/mdatoms->dz_lp_bin;
-          if ( binj >= mdatoms->n_lp_bins ) binj = mdatoms->n_lp_bins-1;
-
-          for( bin = 0; bin < mdatoms->n_lp_bins; bin++){
-
-            dz_p = state->x[i][ZZ] - mdatoms->z_bin[bin];
-
-            r_phi = fabs(dz_p);
-
-            // set kernel cut-off to 3*w
-            if( r_phi > 3.0*mdatoms->w_gauss )
-              phi_z = 0.0;
-            else
-              phi_z = exp( -1.0*r_phi*r_phi/(2.0*mdatoms->w_gauss*mdatoms->w_gauss) )/
-                (M_SQRT2*M_SQRTPI*mdatoms->w_gauss);
-
-            mdatoms->pkin_zz_slab[bin] += vzz*phi_z;
-            mdatoms->pkin_xx_slab[bin] += vxx*phi_z;
-            mdatoms->pkin_yy_slab[bin] += vyy*phi_z;
-            mdatoms->pkin_xz_slab[bin] += vxz*phi_z;
-            mdatoms->pkin_yz_slab[bin] += vyz*phi_z;
-
-            mdatoms->pkin_slab[bin] += (vxx+vyy+vzz)*phi_z/3.0;
-
-            }
-        }
-
-        /* todo: must add "If condition" if user is given to do local pressure or not */
-
         /* converting kJ/(mol*nm) to bar by multiplying 16.6054/A */
-
-        // PKIN
-        printf("PKIN ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pkin_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PVIR
-        printf("PVIR ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pvir_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // P
-        printf("P ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", (mdatoms->pkin_slab[i] + mdatoms->pvir_slab[i])
-                 *16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PKINXX
-        printf("PKINXX ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pkin_xx_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
 
         // PVIRXX
         printf("PVIRXX ");
         for(i = 0; i < mdatoms->n_lp_bins; i++)
           printf("%g ", mdatoms->pvir_xx_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PXX
-        printf("PXX ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", (mdatoms->pkin_xx_slab[i] + mdatoms->pvir_xx_slab[i])
-                 *16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PKINYY
-        printf("PKINYY ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pkin_yy_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
 
         // PVIRYY
@@ -1564,36 +1499,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           printf("%g ", mdatoms->pvir_yy_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
 
-        // PYY
-        printf("PYY ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", (mdatoms->pkin_yy_slab[i] + mdatoms->pvir_yy_slab[i])
-                 *16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PKINZZ
-        printf("PKINZZ ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pkin_zz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
         // PVIRZZ
         printf("PVIRZZ ");
         for(i = 0; i < mdatoms->n_lp_bins; i++)
           printf("%g ", mdatoms->pvir_zz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PZZ
-        printf("PZZ ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", (mdatoms->pkin_zz_slab[i] + mdatoms->pvir_zz_slab[i])
-                 *16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PKINXZ
-        printf("PKINXZ ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pkin_xz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
 
         // PVIRXZ
@@ -1602,30 +1511,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
           printf("%g ", mdatoms->pvir_xz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
 
-        // PXZ
-        printf("PXZ ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", (mdatoms->pkin_xz_slab[i] + mdatoms->pvir_xz_slab[i])
-                 *16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PKINYZ
-        printf("PKINYZ ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", mdatoms->pkin_yz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
         // PVIRYZ
         printf("PVIRYZ ");
         for(i = 0; i < mdatoms->n_lp_bins; i++)
           printf("%g ", mdatoms->pvir_yz_slab[i]*16.6054/(state->box[XX][XX]*state->box[YY][YY]));
-        printf("\n");
-
-        // PYZ
-        printf("PYZ ");
-        for(i = 0; i < mdatoms->n_lp_bins; i++)
-          printf("%g ", (mdatoms->pkin_yz_slab[i] + mdatoms->pvir_yz_slab[i])
-                 *16.6054/(state->box[XX][XX]*state->box[YY][YY]));
         printf("\n");
 
         /****************************************************/

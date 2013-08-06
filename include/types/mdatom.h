@@ -79,15 +79,7 @@ typedef struct {
 
   /* additions to compute local pressue in slab in z direction */
   real *z_bin; /* z positions of bin */
-
-  real *pkin_slab;    /* avg kinetic local pressure vector */
-  real *pvir_slab;    /* avg virial local pressure vector */
-
-  real *pkin_zz_slab; /* kinetic local Pzz vector */
-  real *pkin_xx_slab; /* kinetic local Pxx vector */
-  real *pkin_yy_slab; /* kinetic local Pyy vector */
-  real *pkin_xz_slab; /* kinetic local Pxz vector */
-  real *pkin_yz_slab; /* kinetic local Pyz vector */
+  rvec *r_com_atom; /* com position of a molecule to which an atom belong*/
 
   real *pvir_zz_slab; /* virial local Pzz vector */
   real *pvir_xx_slab; /* virial local Pxx vector */
